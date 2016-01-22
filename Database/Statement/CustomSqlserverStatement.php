@@ -14,6 +14,9 @@
  */
 namespace App\Database\Statement;
 use Cake\Database\Statement\SqlserverStatement;
+use Cake\Database\Statement\BufferResultsTrait;
+use Cake\Database\Statement\BufferedStatement;
+
 /**
  * Statement class meant to be used by an Sqlserver driver
  *
@@ -21,11 +24,28 @@ use Cake\Database\Statement\SqlserverStatement;
 class CustomSqlserverStatement extends SqlserverStatement
 {
 
+    use BufferResultsTrait;
+
     public function __construct(SqlserverStatement $statement = null, $driver = null)
     {
         $this->_statement = $statement;
         $this->_driver = $driver;
     }
+
+    public function execute($params = null)
+    {
+        if ($this->_statement instanceof BufferedStatement) {
+            $this->_statement = $this->_statement->getInnerStatement();
+        }
+
+        if ($this->_bufferResults) {
+            $this->_statement = new BufferedStatement($this->_statement, $this->_driver);
+        }
+
+        return $this->_statement->execute($params);
+    }
+
+
     /**
      * Returns the number of rows returned of affected by last execution
      *
@@ -33,13 +53,7 @@ class CustomSqlserverStatement extends SqlserverStatement
      */
     public function rowCount()
     {
-
-        $changes = $this->_driver->prepare('SELECT @@Rowcount');
-        $changes->execute();
-        $count = $changes->fetch()[0];
-        $changes->closeCursor();
-        return (int)$count;
-
+        return $this->_statement->count();
     }
 
 }

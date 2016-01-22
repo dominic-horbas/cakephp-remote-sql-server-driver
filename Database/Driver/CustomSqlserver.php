@@ -40,7 +40,7 @@ class CustomSqlserver extends Sqlserver
             $config['flags'][PDO::SQLSRV_ATTR_ENCODING] = $config['encoding'];
         }
 
-        $dsn = "sqlsrv:Server={$config['host']};Database={$config['database']};MultipleActiveResultSets=true";
+        $dsn = "sqlsrv:Server={$config['host']};Database={$config['database']};MultipleActiveResultSets=false";
         $this->_connect($dsn, $config);
 
         $connection = $this->connection();
@@ -72,8 +72,11 @@ class CustomSqlserver extends Sqlserver
             $options = [];
         }
         $statement = $this->_connection->prepare($isObject ? $query->sql() : $query, $options);
-        return new CustomSqlserverStatement(new SqlserverStatement($statement, $this), $this);
+        $result = new CustomSqlserverStatement(new SqlserverStatement($statement, $this), $this);
+        if ($isObject && $query->bufferResults() === false) {
+            $result->bufferResults(false);
+        }
+        return $result;
     }
-
 
 }
